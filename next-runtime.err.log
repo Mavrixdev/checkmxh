@@ -1,0 +1,30 @@
+[browser] [v0] Login error: AxiosError: Request failed with status code 401
+    at async login (lib/api.ts:82:20)
+    at async handleLogin (app/admin/login/page.tsx:27:24)
+  80 |
+  81 | export const login = async (password: string): Promise<{ success: boolean; message: string...
+> 82 |   const response = await apiClient.post(`/api/login`, { password });
+     |                    ^
+  83 |   return response.data;
+  84 | };
+  85 | (app/admin/login/page.tsx:43:15)
+[browser] Uncaught ReferenceError: useEffect is not defined
+    at LoginPage (app/admin/login/page.tsx:22:3)
+  20 |
+  21 |   // Tự động ẩn thông báo sau 5 giây
+> 22 |   useEffect(() => {
+     |   ^
+  23 |     if (errorMsg) {
+  24 |       const timer = setTimeout(() => setErrorMsg(null), 5000);
+  25 |       return () => clearTimeout(timer);
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[browser] [v0] Login error: AxiosError: Request failed with status code 401
+    at async login (lib/api.ts:82:20)
+    at async handleLogin (app/admin/login/page.tsx:27:24)
+  80 |
+  81 | export const login = async (password: string): Promise<{ success: boolean; message: string...
+> 82 |   const response = await apiClient.post(`/api/login`, { password });
+     |                    ^
+  83 |   return response.data;
+  84 | };
+  85 | (app/admin/login/page.tsx:43:15)
