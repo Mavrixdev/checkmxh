@@ -17,9 +17,13 @@ import {
   ShieldCheck,
   Smartphone,
   User,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
+import html2canvas from 'html2canvas';
+import { useState } from 'react';
 
 interface ResultCardProps {
   result: LookupResult;
@@ -115,6 +119,7 @@ const ProfileAvatar = ({ src, name, accent }: { src?: string; name?: string; acc
 );
 
 export function ResultCard({ result }: ResultCardProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
   const { t } = useLanguage();
   const banks = Array.isArray(result.banks)
     ? result.banks.filter((bank) => bank.bank_name || bank.account_holder || bank.account_number)
@@ -145,13 +150,55 @@ export function ResultCard({ result }: ResultCardProps) {
     show: { opacity: 1, y: 0 },
   };
 
+  const exportToImage = async () => {
+    const element = document.getElementById('result-card-container');
+    if (!element) return;
+    
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2, // High resolution
+        backgroundColor: '#020617', // slate-950 background to match
+        logging: false,
+        useCORS: true, // Allow cross-origin images (avatars)
+      });
+      
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `mavrixcheck_${result.phone}.png`;
+      link.click();
+    } catch (error) {
+      console.error('Failed to export image:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3"
-    >
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <button
+          onClick={exportToImage}
+          disabled={isDownloading}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-lg text-sm font-medium transition-colors border border-cyan-500/30 disabled:opacity-50"
+        >
+          {isDownloading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          Tải ảnh báo cáo
+        </button>
+      </div>
+
+      <motion.div
+        id="result-card-container"
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 p-4 rounded-xl bg-slate-950"
+      >
       <motion.div variants={item}>
         <Card className={cardClass}>
           <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
@@ -365,5 +412,6 @@ export function ResultCard({ result }: ResultCardProps) {
         </motion.div>
       )}
     </motion.div>
+    </div>
   );
 }

@@ -34,6 +34,20 @@ export async function generateMetadata(): Promise<Metadata> {
     description: site.description,
     keywords: site.keywords,
     generator: 'Mavrixdev',
+    metadataBase: new URL(API_URL),
+    openGraph: {
+      title: site.title,
+      description: site.description,
+      url: API_URL,
+      siteName: site.title,
+      locale: 'vi_VN',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: site.title,
+      description: site.description,
+    },
     icons: {
       icon: [
         {
@@ -42,6 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
       apple: site.iconUrl || '/apple-icon.png',
     },
+    manifest: '/manifest.json',
   }
 }
 
