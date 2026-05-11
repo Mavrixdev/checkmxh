@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   const { session, logout: logoutStore } = useAdminStore();
   const { data: stats, isLoading: statsLoading } = useStats();
   const { data: health } = useHealth();
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiBaseUrl = 'http://103.161.171.8/';
 
   // Check if user is authenticated
   useEffect(() => {
