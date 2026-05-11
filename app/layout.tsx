@@ -11,7 +11,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-  const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://103.161.171.8';
+  const INTERNAL_API_URL = process.env.INTERNAL_API_URL || API_URL;
   const PUBLIC_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://checkmxh.vercel.app';
 
   let settings = null;
@@ -20,18 +20,23 @@ export async function generateMetadata(): Promise<Metadata> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-    const res = await fetch(`${INTERNAL_API_URL}/api/public-settings`, {
-      next: { revalidate: 60 },
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (res.ok) {
-      settings = await res.json();
+    // Only fetch if we have a valid absolute URL
+    if (INTERNAL_API_URL && INTERNAL_API_URL.startsWith('http')) {
+      const res = await fetch(`${INTERNAL_API_URL}/api/public-settings`, {
+        next: { revalidate: 60 },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (res.ok) {
+        settings = await res.json();
+      }
+    } else {
+      clearTimeout(timeoutId);
     }
   } catch (error) {
-    console.error('Failed to fetch settings for metadata:', error);
+    // Silence error for a cleaner terminal
   }
 
   const site = settings?.site || {
@@ -77,6 +82,30 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Silent logs script
+  if (typeof window !== 'undefined') {
+    const originalError = console.error;
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+
+    const shouldSilence = (args: any[]) => {
+      const msg = args.map(a => String(a)).join(' ');
+      return (
+        msg.includes('Download the React DevTools') ||
+        msg.includes('[HMR] connected') ||
+        msg.includes('net::ERR_CONNECTION_REFUSED') ||
+        msg.includes('Failed to fetch') ||
+        msg.includes('401 (Unauthorized)') ||
+        msg.includes('Unauthorized') ||
+        msg.includes('DỪNG LẠI!')
+      );
+    };
+
+    console.error = (...args) => { if (!shouldSilence(args)) originalError(...args); };
+    console.log = (...args) => { if (!shouldSilence(args)) originalLog(...args); };
+    console.warn = (...args) => { if (!shouldSilence(args)) originalWarn(...args); };
+  }
+
   return (
     <html lang="en" className="dark">
       <body className="font-sans antialiased bg-slate-950 text-slate-100">

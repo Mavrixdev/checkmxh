@@ -32,15 +32,21 @@ import { useLanguage } from '@/hooks/use-language';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SystemLogs } from '@/components/admin/system-logs';
 
+import { SystemGuard } from '@/components/admin/system-guard';
+import { useSystemStore } from '@/lib/stores/system-store';
+import { syncSystemState } from '@/lib/api/manager';
+
 export default function AdminDashboard() {
   const { t } = useLanguage();
   const router = useRouter();
   const { session, logout: logoutStore } = useAdminStore();
+  const { systemState, apiUrl, apiConnected } = useSystemStore();
+  const isOffline = systemState === 'offline';
+  
   const { data: stats, isLoading: statsLoading } = useStats();
   const { data: health } = useHealth();
-  const apiBaseUrl = 'http://103.161.171.8/';
 
-  // Check if user is authenticated
+  // Check Auth
   useEffect(() => {
     if (!session.isAuthenticated) {
       router.push('/admin/login');
@@ -52,13 +58,14 @@ export default function AdminDashboard() {
   const handleTestConnection = async () => {
     setIsTesting(true);
     try {
-      const { lookupPhone } = await import('@/lib/api');
-      await lookupPhone('0000000000');
-      toast.success('Kết nối API thành công!');
+      await syncSystemState();
+      if (useSystemStore.getState().apiConnected) {
+        toast.success('Kết nối API thành công!');
+      } else {
+        toast.error('Không thể kết nối tới API');
+      }
     } catch (error: any) {
-      console.error('API Test failed:', error);
-      const msg = error.response?.data?.message || error.message || 'Lỗi kết nối';
-      toast.error(`Kết nối thất bại: ${msg}`);
+      toast.error(`Lỗi: ${error.message}`);
     } finally {
       setIsTesting(false);
     }
@@ -76,17 +83,57 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleResetSystem = () => {
+    const pass = prompt('Nhập mật khẩu Admin để cấu hình lại hệ thống:');
+    if (pass === 'Mavrix2008' || pass === window.localStorage.getItem('mavrix_lookup_private_key')) {
+      if (confirm('Bạn có chắc chắn muốn xóa cấu hình hiện tại và quay lại màn hình Setup?')) {
+        useSystemStore.getState().reset();
+        toast.success('Hệ thống đã được đưa về trạng thái chờ cấu hình');
+        router.push('/admin'); // This will trigger SystemGuard to show SetupMode
+      }
+    } else if (pass !== null) {
+      toast.error('Mật khẩu không chính xác!');
+    }
+  };
+
   if (!session.isAuthenticated) {
     return null;
   }
 
   return (
-    <main className="min-h-screen px-3 py-4 sm:px-5 sm:py-6">
+    <SystemGuard>
+      <main className="min-h-screen px-3 py-4 sm:px-5 sm:py-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mx-auto mb-5 max-w-[1600px]"
       >
+        {isOffline && (
+          <div className="mb-4 rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-300 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>Hệ thống đang Ngoại tuyến (Chỉ xem). Một số tính năng sẽ bị hạn chế.</span>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleTestConnection}
+                className="h-7 text-xs hover:bg-amber-500/20 flex-1 sm:flex-none"
+              >
+                Thử kết nối lại
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleResetSystem}
+                className="h-7 text-xs border-amber-500/30 text-amber-200 hover:bg-amber-500/20 flex-1 sm:flex-none"
+              >
+                Cài đặt lại API
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="rounded-md border border-slate-800/80 bg-slate-950/70 shadow-2xl shadow-black/20">
           <div className="flex flex-col gap-4 border-b border-slate-800/80 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-5">
             <div className="flex min-w-0 items-center gap-3">
@@ -98,28 +145,40 @@ export default function AdminDashboard() {
                   Admin Console
                 </h1>
                 <p className="mt-1 truncate text-sm text-slate-400">
-                  {t('subtitle')}
+                  {isOffline ? 'Offline Management Mode' : t('subtitle')}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
               <div className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900/55 px-3 py-2 text-slate-300">
-                <Activity className={`h-4 w-4 ${health?.status === 'healthy' ? 'text-emerald-300' : 'text-amber-300'}`} />
-                <span className="hidden sm:inline">{health?.status || 'checking'}</span>
+                <Activity className={`h-4 w-4 ${apiConnected ? 'text-emerald-300' : 'text-amber-300'}`} />
+                <span className="hidden sm:inline">{apiConnected ? 'online' : 'offline'}</span>
               </div>
               <div className="flex max-w-full items-center gap-2 rounded-md border border-slate-800 bg-slate-900/55 px-3 py-2 text-slate-300">
                 <Server className="h-4 w-4 text-sky-300" />
-                <span className="max-w-[180px] truncate font-mono text-xs">{apiBaseUrl}</span>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleTestConnection}
-                  disabled={isTesting}
-                  className="h-6 w-6 ml-1 hover:bg-sky-500/20 hover:text-sky-300"
-                >
-                  <Activity className={`h-3 w-3 ${isTesting ? 'animate-pulse' : ''}`} />
-                </Button>
+                <span className="max-w-[180px] truncate font-mono text-xs">{apiUrl}</span>
+                <div className="flex items-center ml-1 border-l border-slate-800 pl-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleTestConnection}
+                    disabled={isTesting}
+                    title="Thử kết nối lại"
+                    className="h-6 w-6 hover:bg-sky-500/20 hover:text-sky-300"
+                  >
+                    <Activity className={`h-3 w-3 ${isTesting ? 'animate-pulse' : ''}`} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleResetSystem}
+                    title="Thay đổi URL API"
+                    className="h-6 w-6 hover:bg-amber-500/20 hover:text-amber-300"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -208,28 +267,28 @@ export default function AdminDashboard() {
               <StatsCard
                 icon={BarChart3}
                 title={t('total_lookups')}
-                value={stats?.totalLookups || 0}
+                value={apiConnected ? (stats?.totalLookups || 0) : '--'}
                 loading={statsLoading}
                 tone="cyan"
               />
               <StatsCard
                 icon={TrendingUp}
                 title={t('cache_hits')}
-                value={stats?.cacheHits || 0}
+                value={apiConnected ? (stats?.cacheHits || 0) : '--'}
                 loading={statsLoading}
                 tone="emerald"
               />
               <StatsCard
                 icon={Users}
                 title={t('fresh_scans')}
-                value={stats?.freshScans || 0}
+                value={apiConnected ? (stats?.freshScans || 0) : '--'}
                 loading={statsLoading}
                 tone="amber"
               />
               <StatsCard
                 icon={AlertCircle}
                 title={t('scammers_detected')}
-                value={stats?.totalScammers || 0}
+                value={apiConnected ? (stats?.totalScammers || 0) : '--'}
                 loading={statsLoading}
                 tone="rose"
               />
@@ -254,11 +313,11 @@ export default function AdminDashboard() {
                   </div>
                   <div className="rounded-md border border-slate-800 bg-slate-900/40 p-4">
                     <p className="text-xs text-slate-500">Documents</p>
-                    <p className="mt-2 text-sm font-medium text-slate-100">{stats?.totalLookups ?? 0}</p>
+                    <p className="mt-2 text-sm font-medium text-slate-100">{apiConnected ? (stats?.totalLookups ?? 0) : '--'}</p>
                   </div>
                   <div className="rounded-md border border-slate-800 bg-slate-900/40 p-4">
                     <p className="text-xs text-slate-500">Risk hits</p>
-                    <p className="mt-2 text-sm font-medium text-rose-300">{stats?.totalScammers ?? 0}</p>
+                    <p className="mt-2 text-sm font-medium text-rose-300">{apiConnected ? (stats?.totalScammers ?? 0) : '--'}</p>
                   </div>
                 </div>
               </div>
@@ -294,5 +353,6 @@ export default function AdminDashboard() {
         </Tabs>
       </div>
     </main>
+    </SystemGuard>
   );
 }

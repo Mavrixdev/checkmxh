@@ -11,11 +11,31 @@ import { Terminal, AlertCircle, Info, Search as SearchIcon, Copy, RefreshCw } fr
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
+import { useSystemStore } from '@/lib/stores/system-store';
+
 type LogFilter = 'all' | 'error' | 'lookup' | 'system';
 
 export function SystemLogs() {
   const { t } = useLanguage();
+  const { apiConnected } = useSystemStore();
   const { data: logs, isLoading, isFetching, refetch } = useLogs(100);
+
+  if (!apiConnected && !isLoading) {
+    return (
+      <Card className="overflow-hidden rounded-md border border-slate-800/80 bg-slate-950/55 p-0 shadow-none grayscale opacity-70">
+        <div className="border-b border-slate-800/80 bg-slate-900/35 px-4 py-4">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <Terminal className="h-5 w-5 text-cyan-400" />
+            {t('system_logs')}
+          </h3>
+        </div>
+        <div className="p-12 text-center space-y-3">
+          <Terminal className="h-12 w-12 text-slate-700 mx-auto" />
+          <p className="text-slate-500 text-sm italic">Logs are unavailable in Offline Mode</p>
+        </div>
+      </Card>
+    );
+  }
   const [filter, setFilter] = useState<LogFilter>('all');
   const [query, setQuery] = useState('');
 

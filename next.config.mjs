@@ -9,14 +9,6 @@ const nextConfig = {
     unoptimized: true,
   },
   turbopack: {},
-  async rewrites() {
-    return [
-      {
-        source: '/backend/:path*',
-        destination: 'http://103.161.171.8/:path*',
-      },
-    ]
-  },
 }
 
 const withPWA = withPWAInit({

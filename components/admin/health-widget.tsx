@@ -7,9 +7,34 @@ import { Activity, Database, Zap, Search } from 'lucide-react';
 import { formatUptime } from '@/lib/utils-dashboard';
 import { useLanguage } from '@/hooks/use-language';
 
+import { useSystemStore } from '@/lib/stores/system-store';
+
 export function HealthWidget() {
   const { t } = useLanguage();
+  const { apiConnected } = useSystemStore();
   const { data: health, isLoading } = useHealth();
+
+  if (!apiConnected && !isLoading) {
+    return (
+      <Card className="overflow-hidden rounded-md border border-slate-800/80 bg-slate-950/55 p-0 shadow-none grayscale opacity-70">
+        <div className="border-b border-slate-800/80 bg-slate-900/35 px-5 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-white">{t('health')}</h3>
+              <p className="mt-1 text-sm text-amber-500/80 font-medium">Backend is currently offline</p>
+            </div>
+            <div className="rounded-full border px-3 py-1 text-xs font-medium bg-red-500/20 text-red-400 border-red-500/30">
+              DISCONNECTED
+            </div>
+          </div>
+        </div>
+        <div className="p-8 text-center space-y-3">
+          <Activity className="h-10 w-10 text-slate-700 mx-auto" />
+          <p className="text-slate-500 text-sm italic">Connect to API to see system health data</p>
+        </div>
+      </Card>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
