@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { useState } from 'react';
 
 interface ResultCardProps {
@@ -156,16 +156,17 @@ export function ResultCard({ result }: ResultCardProps) {
     
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(element, {
-        scale: 2, // High resolution
-        backgroundColor: '#020617', // slate-950 background to match
-        logging: false,
-        useCORS: true, // Allow cross-origin images (avatars)
+      const dataUrl = await toPng(element, {
+        quality: 0.95,
+        backgroundColor: '#020617', // slate-950 background
+        cacheBust: true,
+        style: {
+          padding: '20px',
+        }
       });
       
-      const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.href = image;
+      link.href = dataUrl;
       link.download = `mavrixcheck_${result.phone}.png`;
       link.click();
     } catch (error) {
@@ -176,8 +177,8 @@ export function ResultCard({ result }: ResultCardProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+    <>
+      <div className="flex justify-end mb-4">
         <button
           onClick={exportToImage}
           disabled={isDownloading}
@@ -191,7 +192,6 @@ export function ResultCard({ result }: ResultCardProps) {
           Tải ảnh báo cáo
         </button>
       </div>
-
       <motion.div
         id="result-card-container"
         variants={container}
@@ -380,7 +380,7 @@ export function ResultCard({ result }: ResultCardProps) {
                 <p className="mt-1 text-[11px] text-slate-400">
                   {hasScamData
                     ? result.checkscam?.verdict || (isScammer ? 'Reported as Scammer' : 'No Reports')
-                    : 'Hệ thống chưa trả về kết quả scam cho số này.'}
+                    : 'Hß╗ç thß╗æng chã░a trß║ú vß╗ü kß║┐t quß║ú scam cho sß╗æ n├áy.'}
                 </p>
               </div>
               {hasScamData ? (
@@ -389,7 +389,7 @@ export function ResultCard({ result }: ResultCardProps) {
                   {reportCount > 0 && <StatusBadge status="scam" label={`${reportCount} report(s) found`} />}
                 </>
               ) : (
-                <DetailRow label="Reports" value="Chưa có dữ liệu" />
+                <DetailRow label="Reports" value="Chã░a c├│ dß╗» liß╗çu" />
               )}
             </div>
           </InfoSection>
@@ -412,6 +412,6 @@ export function ResultCard({ result }: ResultCardProps) {
         </motion.div>
       )}
     </motion.div>
-    </div>
+    </>
   );
 }

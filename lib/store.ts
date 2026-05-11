@@ -50,7 +50,7 @@ export const useSearchStore = create<SearchStore>()(
   )
 );
 
-export const useAdminStore = create<AdminStore>((set) => ({
+export const useAdminStore = create<AdminStore>((set, get) => ({
   session: { isAuthenticated: false },
   setAuthenticated: (authenticated, sessionId) =>
     set({
@@ -61,7 +61,6 @@ export const useAdminStore = create<AdminStore>((set) => ({
     }),
   logout: () => set({ session: { isAuthenticated: false } }),
   isAuthenticated: () => {
-    const state = useAdminStore.getState();
-    return state.session.isAuthenticated;
+    return get().session.isAuthenticated;
   },
 }));
