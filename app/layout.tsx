@@ -13,11 +13,20 @@ export async function generateMetadata(): Promise<Metadata> {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
   const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://103.161.171.8';
   const PUBLIC_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://checkmxh.vercel.app';
-  
+
   let settings = null;
 
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/public-settings`, { next: { revalidate: 60 } });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const res = await fetch(`${INTERNAL_API_URL}/api/public-settings`, {
+      next: { revalidate: 60 },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
     if (res.ok) {
       settings = await res.json();
     }
