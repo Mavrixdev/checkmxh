@@ -10,11 +10,14 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+  const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://103.161.171.8';
+  const PUBLIC_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://checkmxh.vercel.app';
+  
   let settings = null;
 
   try {
-    const res = await fetch(`${API_URL}/api/public-settings`, { next: { revalidate: 60 } });
+    const res = await fetch(`${INTERNAL_API_URL}/api/public-settings`, { next: { revalidate: 60 } });
     if (res.ok) {
       settings = await res.json();
     }
@@ -34,11 +37,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: site.description,
     keywords: site.keywords,
     generator: 'Mavrixdev',
-    metadataBase: new URL(API_URL),
+    metadataBase: new URL(PUBLIC_URL),
     openGraph: {
       title: site.title,
       description: site.description,
-      url: API_URL,
+      url: PUBLIC_URL,
       siteName: site.title,
       locale: 'vi_VN',
       type: 'website',
