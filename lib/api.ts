@@ -32,6 +32,17 @@ const getStoredApiUrl = () => {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
+const isProxyNeeded = (url: string) => {
+  if (typeof window === 'undefined') return false;
+  return window.location.protocol === 'https:' && url.startsWith('http://');
+};
+
+const getEffectiveUrl = (configUrl: string | undefined, baseUrl: string) => {
+  if (!configUrl) return baseUrl;
+  if (configUrl.startsWith('http')) return configUrl;
+  return `${baseUrl}${configUrl}`;
+};
+
 const apiClient = axios.create({
   baseURL: getStoredApiUrl(),
   withCredentials: true,
@@ -40,15 +51,23 @@ const apiClient = axios.create({
 
 import { useSystemStore } from './stores/system-store';
 
-// Update baseURL dynamically when needed
+// Update baseURL dynamically and handle Proxy for Mixed Content
 apiClient.interceptors.request.use((config) => {
   const currentBaseUrl = getStoredApiUrl();
-  if (config.baseURL !== currentBaseUrl) {
-    config.baseURL = currentBaseUrl;
+  
+  if (isProxyNeeded(currentBaseUrl)) {
+    // If proxy is needed, we rewrite the URL to point to our proxy route
+    const fullUrl = getEffectiveUrl(config.url, currentBaseUrl);
+    config.baseURL = ''; // Clear base URL since we're using full URL
+    config.url = `/api/proxy?url=${encodeURIComponent(fullUrl)}`;
+  } else {
+    if (config.baseURL !== currentBaseUrl) {
+      config.baseURL = currentBaseUrl;
+    }
   }
 
   // SILENCE LOGS: If we know we're offline, don't even try to request (prevents red console errors)
-  const isHealthCheck = config.url?.includes('public-settings') || config.url?.includes('health');
+  const isHealthCheck = config.url?.includes('public-settings') || config.url?.includes('health') || config.url?.includes('proxy');
   const store = useSystemStore.getState();
   
   if (store.setupCompleted && !store.apiConnected && !isHealthCheck) {
