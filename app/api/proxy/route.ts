@@ -17,7 +17,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 async function handleRequest(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
+  const searchParams = new URL(request.url).searchParams;
   const targetUrl = searchParams.get('url');
 
   if (!targetUrl) {
@@ -25,6 +25,16 @@ async function handleRequest(request: NextRequest) {
   }
 
   try {
+    // Build the final target URL with all other query parameters
+    const finalTargetUrl = new URL(targetUrl);
+    searchParams.forEach((value, key) => {
+      if (key !== 'url') {
+        finalTargetUrl.searchParams.set(key, value);
+      }
+    });
+
+    const finalUrlString = finalTargetUrl.toString();
+
     const headers = new Headers();
     // Copy relevant headers from the original request
     const headersToCopy = ['content-type', 'x-private-key', 'authorization'];
@@ -43,7 +53,7 @@ async function handleRequest(request: NextRequest) {
       if (body) options.body = body;
     }
 
-    const response = await fetch(targetUrl, options);
+    const response = await fetch(finalUrlString, options);
     const data = await response.text();
 
     let jsonData;

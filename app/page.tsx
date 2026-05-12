@@ -306,7 +306,7 @@ export default function Home() {
             <div className="grid gap-4 sm:grid-cols-2">
               {[
                 {
-                  icon: Send,
+                  icon: 'https://img.icons8.com/?size=100&id=5mIvDYZUWDCF&format=png&color=000000',
                   label: 'Telegram',
                   value: '@Mavrixdev',
                   href: 'https://t.me/Mavrixdev',
@@ -316,7 +316,7 @@ export default function Home() {
                   desc: 'Phản hồi nhanh nhất',
                 },
                 {
-                  icon: Facebook,
+                  icon: 'https://img.icons8.com/?size=100&id=z657ovoGgS2o&format=png&color=000000',
                   label: 'Facebook',
                   value: 'Nguyễn Thạc Mậu',
                   href: 'https://www.facebook.com/ntmdz08',
@@ -339,7 +339,7 @@ export default function Home() {
                   className={`flex items-center gap-4 rounded-xl border ${item.bg} ${item.hover} p-5 transition-all duration-300`}
                 >
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${item.bg}`}>
-                    <item.icon className={`h-5 w-5 ${item.color}`} />
+                    <img src={item.icon} className={`h-8 w-8${item.color}`} />
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">{item.label}</p>
